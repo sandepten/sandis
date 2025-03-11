@@ -1,33 +1,49 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"os"
 )
 
-// Ensures gofmt doesn't remove the "net" and "os" imports in stage 1 (feel free to remove this!)
-var (
-	_ = net.Listen
-	_ = os.Exit
-)
-
 func main() {
-	l, err := net.Listen("tcp", "0.0.0.0:6379")
+	ln, err := net.Listen("tcp", "0.0.0.0:6379")
 	if err != nil {
-		fmt.Println("Failed to bind to port 6379")
+		fmt.Println("Error listening:", err)
 		os.Exit(1)
 	}
+	defer ln.Close()
 
-	conn, err := l.Accept()
-	if err != nil {
-		fmt.Println("Error accepting connection: ", err.Error())
-		os.Exit(1)
+	fmt.Println("Listening on 0.0.0.0:6379")
+
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			fmt.Println("Error accepting:", err)
+			continue
+		}
+		go handleConnection(conn)
 	}
+}
+
+func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
-	_, err = conn.Write([]byte("+PONG\r\n+PONG\r\n"))
-	if err != nil {
-		fmt.Println("Unable to write", err)
+	reader := bufio.NewReader(conn)
+
+	for {
+		_, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Println("Error reading:", err)
+			return // Connection closed or error occurred
+		}
+
+		// Respond with PONG
+		_, err = conn.Write([]byte("+PONG\r\n"))
+		if err != nil {
+			fmt.Println("Error writing:", err)
+			return
+		}
 	}
 }
