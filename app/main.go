@@ -33,33 +33,23 @@ func main() {
 
 func handleConnection(conn net.Conn, store map[string]string) {
 	defer conn.Close()
-
 	reader := bufio.NewReader(conn)
 
-	var inputs []string
-	for { // Add a loop to handle multiple commands
-		readData, err := reader.ReadString('\n') // Read until newline
+	for {
+		// Parse the complete RESP command.
+		inputs, err := parseRESP(reader)
 		if err != nil {
-			fmt.Println("Error reading:", err)
-			return // Connection closed or error occurred
+			fmt.Println("Error parsing RESP:", err)
+			return
 		}
-		message := string(readData)
-		message = strings.TrimSpace(message)
-
-		if message == "" { // Handle empty input (e.g., just a newline)
-			continue
-		}
-		input := parseInput(message)
-		if len(input) > 0 {
-			inputs = append(inputs, parseInput(message))
-		}
-
 		if len(inputs) == 0 {
-			fmt.Println("Empty input")
 			continue
 		}
+		fmt.Println("Received tokens:", inputs)
+
 		command := strings.ToLower(inputs[0])
 		var errWrite error
+
 		switch command {
 		case "echo":
 			if len(inputs) > 1 {
@@ -72,14 +62,17 @@ func handleConnection(conn net.Conn, store map[string]string) {
 		case "set":
 			if len(inputs) > 2 {
 				errWrite = set(conn, store, inputs[1], inputs[2])
+			} else {
+				continue
 			}
 		case "get":
 			if len(inputs) > 1 {
 				errWrite = get(conn, store, inputs[1])
+			} else {
+				continue
 			}
 		default:
 			errWrite = defaultCase(conn, command)
-
 		}
 		if errWrite != nil {
 			fmt.Println("Error writing:", errWrite)
