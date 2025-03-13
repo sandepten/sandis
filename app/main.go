@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -32,17 +33,46 @@ func handleConnection(conn net.Conn) {
 
 	reader := bufio.NewReader(conn)
 
-	for {
-		_, err := reader.ReadString('\n')
+	var inputs []string
+	for { // Add a loop to handle multiple commands
+		readData, err := reader.ReadString('\n') // Read until newline
 		if err != nil {
 			fmt.Println("Error reading:", err)
 			return // Connection closed or error occurred
 		}
+		message := string(readData)
+		message = strings.TrimSpace(message)
 
-		// Respond with PONG
-		_, err = conn.Write([]byte("+PONG\r\n"))
-		if err != nil {
-			fmt.Println("Error writing:", err)
+		if message == "" { // Handle empty input (e.g., just a newline)
+			continue
+		}
+		input := parseInput(message)
+		if len(input) > 0 {
+			inputs = append(inputs, parseInput(message))
+		}
+		fmt.Println(inputs)
+
+		if len(inputs) == 0 {
+			fmt.Println("Empty input")
+			continue
+		}
+		command := strings.ToLower(inputs[0])
+		var errWrite error
+		switch command {
+		case "echo":
+			if len(inputs) > 1 {
+				errWrite = echo(conn, inputs[1])
+			} else {
+				continue
+			}
+		case "ping":
+			errWrite = ping(conn)
+		default:
+			errWrite = defaultCase(conn, command)
+
+		}
+		if errWrite != nil {
+			fmt.Println("Error writing:", errWrite)
 			return
 		}
 	}
