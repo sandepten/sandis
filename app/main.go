@@ -18,17 +18,20 @@ func main() {
 
 	fmt.Println("Listening on 0.0.0.0:6379")
 
+	// redis store
+	store := make(map[string]string)
+
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
 			fmt.Println("Error accepting:", err)
 			continue
 		}
-		go handleConnection(conn)
+		go handleConnection(conn, store)
 	}
 }
 
-func handleConnection(conn net.Conn) {
+func handleConnection(conn net.Conn, store map[string]string) {
 	defer conn.Close()
 
 	reader := bufio.NewReader(conn)
@@ -50,7 +53,6 @@ func handleConnection(conn net.Conn) {
 		if len(input) > 0 {
 			inputs = append(inputs, parseInput(message))
 		}
-		fmt.Println(inputs)
 
 		if len(inputs) == 0 {
 			fmt.Println("Empty input")
@@ -67,6 +69,14 @@ func handleConnection(conn net.Conn) {
 			}
 		case "ping":
 			errWrite = ping(conn)
+		case "set":
+			if len(inputs) > 2 {
+				errWrite = set(conn, store, inputs[1], inputs[2])
+			}
+		case "get":
+			if len(inputs) > 1 {
+				errWrite = get(conn, store, inputs[1])
+			}
 		default:
 			errWrite = defaultCase(conn, command)
 

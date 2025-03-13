@@ -21,3 +21,18 @@ func defaultCase(conn net.Conn, message string) error {
 	_, err := conn.Write([]byte(message + " is an unrecoginized command\n"))
 	return err
 }
+
+func set(conn net.Conn, store map[string]string, key string, value string) error {
+	store[key] = value
+	_, err := conn.Write([]byte("+OK\r\n"))
+	return err
+}
+
+func get(conn net.Conn, store map[string]string, key string) error {
+	value := store[key]
+
+	dataLength := len(value)
+	writeData := fmt.Sprintf("$%d\r\n%s\r\n", dataLength, value)
+	_, err := conn.Write([]byte(writeData))
+	return err
+}
