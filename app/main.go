@@ -6,7 +6,13 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 )
+
+type StoreValue struct {
+	value     string
+	expiresAt time.Time
+}
 
 func main() {
 	ln, err := net.Listen("tcp", "0.0.0.0:6379")
@@ -19,7 +25,7 @@ func main() {
 	fmt.Println("Listening on 0.0.0.0:6379")
 
 	// redis store
-	store := make(map[string]string)
+	store := make(map[string]StoreValue)
 
 	for {
 		conn, err := ln.Accept()
@@ -31,7 +37,7 @@ func main() {
 	}
 }
 
-func handleConnection(conn net.Conn, store map[string]string) {
+func handleConnection(conn net.Conn, store map[string]StoreValue) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
 
@@ -45,7 +51,6 @@ func handleConnection(conn net.Conn, store map[string]string) {
 		if len(inputs) == 0 {
 			continue
 		}
-		fmt.Println("Received tokens:", inputs)
 
 		command := strings.ToLower(inputs[0])
 		var errWrite error
@@ -61,13 +66,13 @@ func handleConnection(conn net.Conn, store map[string]string) {
 			errWrite = ping(conn)
 		case "set":
 			if len(inputs) > 2 {
-				errWrite = set(conn, store, inputs[1], inputs[2])
+				errWrite = set(conn, store, inputs)
 			} else {
 				continue
 			}
 		case "get":
 			if len(inputs) > 1 {
-				errWrite = get(conn, store, inputs[1])
+				errWrite = get(conn, store, inputs)
 			} else {
 				continue
 			}

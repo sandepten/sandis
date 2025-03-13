@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"net"
+	"strconv"
+	"time"
 )
 
 func echo(conn net.Conn, message string) error {
@@ -22,17 +24,39 @@ func defaultCase(conn net.Conn, message string) error {
 	return err
 }
 
-func set(conn net.Conn, store map[string]string, key string, value string) error {
-	store[key] = value
+func set(conn net.Conn, store map[string]StoreValue, inputs []string) error {
+	key := inputs[1]
+	value := inputs[2]
+	var expiryTime time.Time
+	if len(inputs) > 4 && inputs[3] == "px" {
+		duration, err := strconv.Atoi(inputs[4])
+		if err == nil {
+			expiryTime = time.Now().Add(time.Duration(duration) * time.Millisecond)
+		}
+	} else {
+		expiryTime = time.Time{}
+	}
+
+	// var valueData StoreValue
+	valueData := StoreValue{
+		value:     value,
+		expiresAt: expiryTime,
+	}
+	store[key] = valueData
 	_, err := conn.Write([]byte("+OK\r\n"))
 	return err
 }
 
-func get(conn net.Conn, store map[string]string, key string) error {
+func get(conn net.Conn, store map[string]StoreValue, inputs []string) error {
+	key := inputs[1]
 	value := store[key]
+	valueData := value.value
+	if !value.expiresAt.IsZero() && value.expiresAt.Before(time.Now()) {
+		valueData = ""
+	}
 
-	dataLength := len(value)
-	writeData := fmt.Sprintf("$%d\r\n%s\r\n", dataLength, value)
+	dataLength := len(valueData)
+	writeData := fmt.Sprintf("$%d\r\n%s\r\n", dataLength, valueData)
 	_, err := conn.Write([]byte(writeData))
 	return err
 }
