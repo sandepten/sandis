@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"time"
 )
@@ -62,5 +63,21 @@ func get(conn net.Conn, store map[string]StoreValue, inputs []string) error {
 }
 
 func config(conn net.Conn, inputs []string) error {
+	// function := inputs[1]
+	param := inputs[2]
+
+	if param == "dir" {
+		value := os.Getenv(RdpDirPath)
+		writeData := fmt.Sprintf("*2\r\n$3\r\ndir\r\n$16\r\n%s\r\n", value)
+		_, err := conn.Write([]byte(writeData))
+		fmt.Println(err, writeData)
+		return err
+	}
+	if param == "dbfilename" {
+		value := os.Getenv(RdpFileName)
+		writeData := fmt.Sprintf("*2\r\n$3\r\ndir\r\n$16\r\n%s\r\n", value)
+		_, err := conn.Write([]byte(writeData))
+		return err
+	}
 	return nil
 }

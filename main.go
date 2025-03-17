@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	_ "github.com/joho/godotenv/autoload"
 )
 
 const (
