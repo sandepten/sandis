@@ -9,6 +9,12 @@ import (
 	"time"
 )
 
+const (
+	// RDP
+	RdpDirPath  = "RDB_DIR_PATH"
+	RdpFileName = "RDB_FILE_NAME"
+)
+
 type StoreValue struct {
 	value     string
 	expiresAt time.Time
@@ -73,6 +79,12 @@ func handleConnection(conn net.Conn, store map[string]StoreValue) {
 		case "get":
 			if len(inputs) > 1 {
 				errWrite = get(conn, store, inputs)
+			} else {
+				continue
+			}
+		case "config":
+			if len(inputs) > 1 {
+				errWrite = config(conn, inputs)
 			} else {
 				continue
 			}

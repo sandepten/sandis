@@ -20,7 +20,7 @@ func ping(conn net.Conn) error {
 }
 
 func defaultCase(conn net.Conn, message string) error {
-	_, err := conn.Write([]byte(message + " is an unrecoginized command\n"))
+	_, err := conn.Write([]byte(fmt.Sprintf("-ERR unknown command '%s'\r\n", message)))
 	return err
 }
 
@@ -59,4 +59,8 @@ func get(conn net.Conn, store map[string]StoreValue, inputs []string) error {
 	writeData := fmt.Sprintf("$%d\r\n%s\r\n", dataLength, valueData)
 	_, err := conn.Write([]byte(writeData))
 	return err
+}
+
+func config(conn net.Conn, inputs []string) error {
+	return nil
 }
